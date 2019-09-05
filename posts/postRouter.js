@@ -12,7 +12,7 @@ router.get('/', (req, res) => {
         })
 });
 
-router.get('/:id', (req, res) => {
+router.get('/:id', validatePostId, (req, res) => {
     const {id} = req.params;
     Posts.getById(id)
         .then(post => {
@@ -23,7 +23,7 @@ router.get('/:id', (req, res) => {
         })
 });
 
-router.delete('/:id', (req, res) => {
+router.delete('/:id', validatePostId, (req, res) => {
     const {id} = req.params;
     Posts.remove(id)
         .then(post => {
@@ -34,7 +34,7 @@ router.delete('/:id', (req, res) => {
         })
 });
 
-router.put('/:id', (req, res) => {
+router.put('/:id', validatePostId, validatePost, (req, res) => {
     const {id} = req.params;
     const update = req.body;
     Posts.update(id, update)
@@ -52,7 +52,29 @@ router.put('/:id', (req, res) => {
 // custom middleware
 
 function validatePostId(req, res, next) {
+    const { id } = req.params;
+    Posts.getById(id).then( post => {
+        if(post){
+            req.post = post;
+            next();
+        } else {
+            res.status(400).json({message: "invalid post id"});
+        };
+    }).catch(error => {
+        res.status(500).json({error: "Server couldn't process your request"})
+    });
+};
 
+function validatePost(req, res, next) {
+    if(JSON.stringify(req.body) !== '{}'){
+        if(req.body.text){
+            next();
+        } else {
+            res.status(400).json({message: "missing required text field"});
+        }
+    } else {
+        res.status(400).json({message: "missing post data"});
+    }
 };
 
 module.exports = router;
